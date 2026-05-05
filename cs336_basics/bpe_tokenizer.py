@@ -1,16 +1,57 @@
 import regex as re
 
+# add compression ratio
+# add reverse dict faster for decoding
+# 
+
 PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
-word_dict = {}
 byte_tuple_list = []
 current_token_id = 256
-str = "some text that i'll pre-tokenize some text is goint to repeat because need for testinghehe."
+target_vocab_size = 900
+merge_rule = {}
+str = """ 
+Once upon a time there was a little boy named Ben. Ben loved to explore the world around him. He saw many amazing things, like beautiful vases that were on display in a store. One day, Ben was walking through the store when he came across a very special vase. When Ben saw it he was amazed!  
+He said, “Wow, that is a really amazing vase! Can I buy it?” 
+The shopkeeper smiled and said, “Of course you can. You can take it home and show all your friends how amazing it is!”
+So Ben took the vase home and he was so proud of it! He called his friends over and showed them the amazing vase. All his friends thought the vase was beautiful and couldn't believe how lucky Ben was. 
+And that's how Ben found an amazing vase in the store!
+<|endoftext|>
+Once upon a time, there was a reliable otter named Ollie. He lived in a river with his family. They all loved to play and swim together.
+One day, Ollie's mom said, "Ollie, hurry and get some fish for dinner!" Ollie swam fast to catch fish. He saw his friend, the duck. "Hi, Ollie!" said the duck. "Hi, duck!" said Ollie. "I need to hurry and catch fish for my family."
+While Ollie was catching fish, he found a big shiny stone. He thought, "This is not a fish, but it is so pretty!" Ollie took the shiny stone home to show his family. They all looked at the shiny stone and smiled. The shiny stone made everyone happy, and they forgot about the fish for dinner.
+<|endoftext|>
+One day, a little boy named Tim went to the park. He saw a big tiger. The tiger was not mean, but very easy to play with. Tim and the tiger played all day. They had lots of fun.
+Then, something unexpected happened. The tiger started to shake. Tim was scared. He did not know what was going on. But then, the tiger turned into a nice dog. Tim was very surprised.
+Tim and the dog played together now. They were very happy. The dog was easy to play with too. At the end of the day, Tim went home with his new friend.
+<|endoftext|>
 
-def bpe_merge(tuple_list: list):
+Once upon a time there was a friendly little boy called Bob. Bob loved to pick flowers and look for birds. One day he decided to go outside with his friends to pick some more flowers. 
+He suddenly noticed something weird on the ground. It was a big, green thumb! It was so big, Bob had never seen one before. Bob curiously leaned in to take a better look. He told his friends: "look everyone, I picked up this big thumb! What do we do with it?"
+His friends were very excited. They told him to pick it up and take it home to show his family. So Bob carefully picked up the friendly thumb and carried it back home. When he arrived, Bob happily showed the thumb to his family. His dad was amazed and hugged Bob to show his appreciation.
+From that day on Bob always kept the big, friendly thumb with him as a reminder that special things can be found anywhere.
+<|endoftext|>
+Once upon a time, in a small house, there lived a little girl named Lucy. Lucy loved the color orange. She had an orange dress, an orange ball, and even an orange cat. One day, Lucy met a new friend. This friend was not like other friends. It was a spirit. The spirit was very nice and liked to play with Lucy.
+One day, Lucy and the spirit were playing with her orange ball. They were having so much fun. Then, Lucy's mom called her for dinner. Lucy said to the spirit, "I have to go eat now. Will you play with me later?" The spirit nodded and smiled.
+At dinner, Lucy told her mom about the spirit. But her mom did not believe her. She said, "Spirits are not real, Lucy. You have a big imagination." Lucy felt sad that her mom did not believe her. After dinner, she went back to play with the spirit. They played with the orange ball and had lots of fun. Lucy knew that even if others ignore her friend, the spirit was real and they could play together.
+<|endoftext|>
+One day, a boy named Tim went to the park to play. He saw his friend, Sam, playing with a toy car. Tim wanted to join and play with Sam. They both played with the toy car, and it went fast. The car had a battery inside that made it go.
+Tim said, "Sam, the battery is tight in the car. It will not fall out." Sam smiled and they kept playing. They raced the car around the park, laughing and having fun.
+But then, something unexpected happened. A big dog came and took the toy car in its mouth! Tim and Sam were scared, but the dog just wanted to play too. They all played together, and the dog was very gentle with the car. In the end, Tim, Sam, and the dog became good friends.
+<|endoftext|>
+Once upon a time, there was a sailor named Tom. Tom had a big boat. He liked to sail on the sea. One day, Tom saw a little fish. The fish was sad. It was lost and wanted to go home.
+Tom said, "I can help you, little fish. You can fit in my boat, and I will take you home." The little fish was happy. It jumped into Tom's boat. They sailed together on the sea.
+The sea was safe and calm. Tom and the little fish talked and laughed. They became good friends. At last, they found the fish's home. The little fish said, "Thank you, Tom, for helping me." Tom smiled and waved goodbye. He sailed away, knowing he had a new friend.
+<|endoftext|>
+Once upon a time, there was a smooth vase. It was very pretty. The vase lived in a small house with a girl named Lily and her mom.
+One day, Lily and her mom went outside to play. Before they left, her mom said, "Lily, please close the door." Lily closed the door and they played all day.
+When they came back, they saw the smooth vase on the floor. It was broken! Lily and her mom were very sad. They could not fix the pretty vase. The end.
+<|endoftext|>
+"""
+
+def bpe_merge(tuple_list: list, current_token_id: int):
     pair_frequency_dict = {}
-    merge_rule = {}
+    word_dict = {}
     
-
     for tup in tuple_list:
         if tup in word_dict:
             word_dict[tup] += 1
@@ -22,15 +63,26 @@ def bpe_merge(tuple_list: list):
         for i in range(0, len(word) -1 ):
             temp_tuple = (word[i], word[i+1])
             pair_frequency_dict[temp_tuple] = pair_frequency_dict.get(temp_tuple, 0) + word_dict[word]
+
+    if not pair_frequency_dict:
+        return tuple_list, current_token_id
     
     best_pair = max(pair_frequency_dict, key=lambda pair: (pair_frequency_dict[pair], pair))
     merge_rule[best_pair] = current_token_id
+    new_tuple_list = []
+    for tup in tuple_list:
+        new_word = []
+        i = 0
+        while i < len(tup):
+            if i < len(tup) - 1 and (tup[i], tup[i+1]) == best_pair:
+                new_word.append(current_token_id)
+                i += 2
+            else:
+                new_word.append(tup[i])
+                i += 1
+        new_tuple_list.append(tuple(new_word))
     current_token_id += 1
-
-    # here comes the loop to merge over all the tokens
-
-
-    return pair_frequency_dict, merge_rule
+    return new_tuple_list, current_token_id
 
 if __name__=="__main__":
     # pre-tokenization
@@ -40,6 +92,17 @@ if __name__=="__main__":
     for token in pre_tokens:
         byte_tuple_list.append(tuple(token.encode("UTF-8")))
     
-    a, b = bpe_merge(byte_tuple_list)
+    tuple_list, current_token_id = bpe_merge(byte_tuple_list, current_token_id)
+    tuple_list_updated = tuple_list
+
+    for i in range(target_vocab_size - 256):
+       tuple_list_updated, current_token_id = bpe_merge(tuple_list_updated, current_token_id)
+    #    print(tuple_list_updated[:10])
+    #    print("-----------------------------------------------------")
+       # print(sum(len(t) for t in tuple_list_updated), current_token_id)
+    # print(tuple_list)
+    # print("----------------------------------------------------------------")
+    # print(tuple_list_updated)
+    print(len(merge_rule))
     
 
