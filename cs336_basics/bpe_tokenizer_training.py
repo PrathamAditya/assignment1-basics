@@ -1,30 +1,29 @@
 import regex as re
 from collections import defaultdict
 import os
+import cProfile
+from concurrent.futures import ProcessPoolExecutor
+from collections import Counter
 
 PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
 
-def bpe_merge(tuple_list, next_id, vocab, merges, pair_frequency_dict, word_dict, pair_to_words_dict):
+def bpe_merge(next_id, vocab, merges, pair_frequency_dict, word_dict, pair_to_words_dict):
    
     if not pair_frequency_dict:
-        return tuple_list, next_id
+        return next_id
     
-    best_pair = max(pair_frequency_dict, key=lambda pair: (pair_frequency_dict[pair], pair))
+    best_pair = max(
+        pair_frequency_dict, 
+        key=lambda pair: (pair_frequency_dict[pair], (vocab[pair[0]], vocab[pair[1]]))
+    )
+    
     old_list = list(pair_to_words_dict[best_pair])
-    # distinct_pairs = set()
     for word in old_list:
         freq = word_dict[word]
         
         for i in range(0, len(word)-1):
             temp_tuple = (word[i], word[i+1])
-            # distinct_pairs.add(temp_tuple)
             pair_frequency_dict[temp_tuple] -= freq
-            # if pair_frequency_dict[temp_tuple] == 0:
-            #     del pair_frequency_dict[temp_tuple]
-
-        # for item in distinct_pairs:
-        #     if not (item in pair_frequency_dict):
-        #         pair_to_words_dict[item].remove(word)
 
     for old_word in old_list:
         new_word = []
@@ -61,98 +60,123 @@ def bpe_merge(tuple_list, next_id, vocab, merges, pair_frequency_dict, word_dict
             pair_to_words_dict[pair].remove(old_word)
             if pair in pair_frequency_dict and pair_frequency_dict[pair] == 0:
                     del pair_frequency_dict[pair]
-    if next_id % 100 == 0:
-        print(f"XOXO{next_id, best_pair}XOXO")
+            if len(pair_to_words_dict[pair]) == 0:
+                del pair_to_words_dict[pair]
+
     a, b = best_pair
     vocab[next_id] = vocab[a] + vocab[b]
     merges.append((vocab[a], vocab[b]))
     next_id += 1
     return next_id
 
-def add_special_token(special_tokens, next_id, vocab):
+# def add_special_token(special_tokens, next_id, vocab):
+#     for tok in special_tokens:
+#         vocab[next_id] = tok.encode("utf-8")
+#         next_id += 1
+#     return next_id
+
+# def process_batch(chunk_data, pattern):
+#     # text = chunk_data.decode('utf-8', errors='ignore')    
+#     word_dict = {}
+
+#     for match in re.finditer(pattern, chunk_data):
+#         token = match.group()
+#         encoded = tuple(token.encode("utf-8"))
+        
+#         if encoded in word_dict:
+#             word_dict[encoded] += 1
+#         else: 
+#             word_dict[encoded] = 1
+    
+#     return word_dict
+def process_batch(segments, pattern):
+
+    word_dict = Counter()
+    compiled_pat = re.compile(pattern)
+
+    for text in segments:
+        for match in compiled_pat.finditer(text):
+            word = match.group()
+            encoded_tuple = tuple(word.encode("utf-8"))
+            word_dict[encoded_tuple] += 1
+            
+    return word_dict
+
+def train_bpe(file_path: str, vocab_size: int, special_tokens: list[str]):
+
+    vocab = {i: bytes([i]) for i in range(256)}
+    next_id = 256
+    
     for tok in special_tokens:
         vocab[next_id] = tok.encode("utf-8")
         next_id += 1
-    return next_id
-
-def train_bpe(file_path: str, vocab_size: int, special_tokens: list[str]):
-    next_id = 256
-    byte_tuple_list = []
-    chunk_counter = 1
-    vocab = {i: bytes([i]) for i in range(256)}
     merges = []
     pair_frequency_dict = {}
     word_dict = {}
     pair_to_words_dict = defaultdict(set)
-    next_id = add_special_token(special_tokens, next_id, vocab)
-
-    # pre-tokenization
-    with open(file_path, 'r', encoding='utf-8') as file:
-        file_content = file.read()
+    
 
     if special_tokens:
-        pattern = "|".join(map(re.escape, special_tokens))
-        chunks = re.split(pattern, file_content)
+        pattern_str = "|".join(map(re.escape, special_tokens))
     else:
-        chunks = [file_content]
+        pattern_str = ""
 
-    # for test
-    # chunks = ["abbaaababa, bababbababab", "aaaaaaaaaa", "Pratham", "Aditya", "Salhotras"]
-    # chunks = ["aaaaabaaaaa", "Pratham"]
-    # chunks = ["abab"]
-    # chunks = ["aaaa"]
-    # chunks = [
-    #             "abab",
-    #             "aaaa",
-    #             "abcabc",
-    #             "that",
-    #             "there",
-    #             "this",
-    #             "tr tr",
-    #             "abababab"]
+    with open(file_path, 'r', encoding='utf-8') as f:
+        data = f.read()
 
-    for chunk in chunks:
-        pre_tokens = re.findall(PAT, chunk)
-        # print(pre_tokens)
-        for token in pre_tokens:
-            byte_tuple_list.append(tuple(token.encode("utf-8")))
-        # if chunk_counter > 999:
-        #     break
-        # if chunk_counter > 10000: break
-        if chunk_counter % 1000 == 0:
-            print(f"chunk: {chunk_counter}")
-        chunk_counter += 1
+    if pattern_str:
+        segments = re.split(pattern_str, data)
+    else:
+        segments = [data]
 
-    tokens = byte_tuple_list
+    num_workers = 8
+    batches = [[] for _ in range(num_workers)]
+    for i, seg in enumerate(segments):
+        batches[i % num_workers].append(seg)
+    # file_size = len(data)
+    # target_size = file_size // 8
+    # boundaries = [0]
+    # curr_pos = 0
+    
+    # for _ in range(7):
+    #     search_start = curr_pos + target_size
+    #     match = regex.search(data, search_start)
+    #     curr_pos = match.end() if match else curr_pos + target_size
+    #     boundaries.append(curr_pos)
+    # boundaries.append(file_size)
 
-    for tup in tokens:
-        if tup in word_dict:
-            word_dict[tup] += 1
-        else:
-            word_dict[tup] = 1
+    total_frequencies = Counter()
+    
+    with ProcessPoolExecutor(max_workers=num_workers) as executor:
+        futures = [executor.submit(process_batch, batch, PAT) for batch in batches]
+        
+        for future in futures:
+            total_frequencies.update(future.result())
 
+    word_dict = total_frequencies
     for word, freq in word_dict.items():
         for i in range(0, len(word)-1 ):
             temp_tuple = (word[i], word[i+1])
             pair_frequency_dict[temp_tuple] = pair_frequency_dict.get(temp_tuple, 0) + freq
             pair_to_words_dict[temp_tuple].add(word)
-    
  
     while len(vocab) < vocab_size:
-        next_id = bpe_merge(tokens, next_id, vocab, merges, pair_frequency_dict, word_dict, pair_to_words_dict)
-        # if(new_tokens == tokens):
-        #     break
-        # tokens = new_tokens
+        temp_id = next_id
+        next_id = bpe_merge(next_id, vocab, merges, pair_frequency_dict, word_dict, pair_to_words_dict)
+        if(next_id == temp_id):
+            break
     return vocab, merges
 
 if __name__=="__main__":
-    #file_path = f'assignment1-basics/data/TinyStoriesV2-GPT4-valid.txt'
-    file_path = f'../data/TinyStoriesV2-GPT4-train.txt'
-    vocab_size = 10000
+    pr = cProfile.Profile()
+    pr.enable()
+    # file_path = f'assignment1-basics/data/TinyStoriesV2-GPT4-valid.txt'
+    file_path = f'../data/TinyStoriesV2-GPT4-valid.txt'
+    # vocab_size = 3000
+    vocab_size = 2000
     special_token_list = ["<|endoftext|>"]
 
     v, m = train_bpe(file_path, vocab_size, special_token_list)
-    # print(m)
     output_dir = r"D:\Pratham\Courses\CS336\assignment1-basics\data\traning_output"
     os.makedirs(output_dir, exist_ok=True)
     merge_path = os.path.join(output_dir, "merge.txt")
@@ -167,4 +191,7 @@ if __name__=="__main__":
     with open(merge_path, "w", encoding='utf-8') as merge:
         for a, b in m:
             merge.write(f"{a} {b}\n")
+    
+    pr.disable()
+    pr.print_stats(sort='time')
 
