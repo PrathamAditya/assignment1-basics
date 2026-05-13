@@ -67,6 +67,7 @@ def bpe_merge(next_id, vocab, merges, pair_frequency_dict, word_dict, pair_to_wo
     vocab[next_id] = vocab[a] + vocab[b]
     merges.append((vocab[a], vocab[b]))
     next_id += 1
+    print(f"XOXO{next_id}XOXO")
     return next_id
 
 # def add_special_token(special_tokens, next_id, vocab):
@@ -129,7 +130,7 @@ def train_bpe(file_path: str, vocab_size: int, special_tokens: list[str]):
     else:
         segments = [data]
 
-    num_workers = 8
+    num_workers = 10
     batches = [[] for _ in range(num_workers)]
     for i, seg in enumerate(segments):
         batches[i % num_workers].append(seg)
@@ -171,9 +172,10 @@ if __name__=="__main__":
     pr = cProfile.Profile()
     pr.enable()
     # file_path = f'assignment1-basics/data/TinyStoriesV2-GPT4-valid.txt'
-    file_path = f'../data/TinyStoriesV2-GPT4-valid.txt'
+    file_path = f'../data/TinyStoriesV2-GPT4-train.txt'
     # vocab_size = 3000
-    vocab_size = 2000
+    # vocab_size = 10000
+    vocab_size = 10000
     special_token_list = ["<|endoftext|>"]
 
     v, m = train_bpe(file_path, vocab_size, special_token_list)

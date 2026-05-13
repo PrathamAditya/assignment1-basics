@@ -85,24 +85,28 @@ def bpe_merge(tuple_list: list, current_token_id: int):
     return new_tuple_list, current_token_id
 
 if __name__=="__main__":
-    # pre-tokenization
-    pre_tokens = re.findall(PAT, str)
+    # # pre-tokenization
+    # pre_tokens = re.findall(PAT, str)
     
-    # byte tuples from string tokens
-    for token in pre_tokens:
-        byte_tuple_list.append(tuple(token.encode("UTF-8")))
+    # # byte tuples from string tokens
+    # for token in pre_tokens:
+    #     byte_tuple_list.append(tuple(token.encode("UTF-8")))
     
-    tuple_list, current_token_id = bpe_merge(byte_tuple_list, current_token_id)
-    tuple_list_updated = tuple_list
+    # tuple_list, current_token_id = bpe_merge(byte_tuple_list, current_token_id)
+    # tuple_list_updated = tuple_list
 
-    for i in range(target_vocab_size - 256):
-       tuple_list_updated, current_token_id = bpe_merge(tuple_list_updated, current_token_id)
-    #    print(tuple_list_updated[:10])
-    #    print("-----------------------------------------------------")
-       # print(sum(len(t) for t in tuple_list_updated), current_token_id)
-    # print(tuple_list)
-    # print("----------------------------------------------------------------")
-    # print(tuple_list_updated)
-    print(len(merge_rule))
+    # for i in range(target_vocab_size - 256):
+    #    tuple_list_updated, current_token_id = bpe_merge(tuple_list_updated, current_token_id)
+    # #    print(tuple_list_updated[:10])
+    # #    print("-----------------------------------------------------")
+    #    # print(sum(len(t) for t in tuple_list_updated), current_token_id)
+    # # print(tuple_list)
+    # # print("----------------------------------------------------------------")
+    # # print(tuple_list_updated)
+    # print(len(merge_rule))
+    token = "hello"
+    encoded = token.encode("utf-8")
+    print(encoded)           # What type is this?
+    print(tuple(encoded))   
     
 
