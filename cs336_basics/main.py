@@ -2,14 +2,16 @@ import regex as re
 import numpy as np
 import ast
 from cs336_basics.tokenizer import Tokenizer
+import os
 # # import Tokenizer
 # # endcode text
 # # step 1: pre tokenize
-# PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
+# PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}+|\s+(?!\S)|\s+"""
 # compiled_pat = re.compile(PAT)
 # input_text = "This is sample text, I am using. 1"
 # input_text = compiled_pat.finditer(input_text)
 # encoded = []
+
 
 # for word in input_text:
 #     encoded.append(tuple(word.group().encode("utf-8")))
@@ -117,15 +119,51 @@ test_strings_1 = [
     "<|endoftext|>",
     "hello<|endoftext|>world",
 ]
-test_strings_2 = ["abababab"]
 
-input_strings = ["a", "hello", "hello world", "hi\nthere\t!", "café", "hello 😊","Hello नमस्ते 你好"]
-i_will_catch_you = Tokenizer.from_files(r"D:\Pratham\Courses\CS336\assignment1-basics\data\traning_output\vocab.txt", 
-                                        r"D:\Pratham\Courses\CS336\assignment1-basics\data\traning_output\merge.txt")
-# print(i_will_catch_you.encode("aab"))
+# test_strings_2 = ["é", "こんにちは", "<|endoftext|>"]
 
-for str in test_strings_2:
-    print(i_will_catch_you.decode(i_will_catch_you.encode(str)))
+# input_strings = ["a", "hello", "hello world", "hi\nthere\t!", "café", "hello 😊","Hello नमस्ते 你好"]
+i_will_catch_you = Tokenizer.from_files(r"../data/training_output _original/vocab.txt", 
+                                        r"../data/training_output _original/merge.txt")
+
+
+with open(r"../data/TinyStories10.txt", "r", encoding = "utf-8") as t:
+    tokens = i_will_catch_you.encode_iterable(t)
+    with open(r"../data/TinyStories10-Tokens.txt", "w") as file:
+        for line in tokens:
+            file.write(f"{line}\n")
+
+
+# Compression ratio
+
+# 1. Raw input size from metadata
+bytes_input = os.path.getsize(r"../data/TinyStories10.txt")
+
+# 2. Memory-efficient token counting
+with open(r"../data/TinyStories10-Tokens.txt", "r", encoding="utf-8") as f:
+    num_tokens = sum(len(line.split()) for line in f)
+
+# 3. Calculate metrics assuming 4 bytes per standard 32-bit int token
+bytes_per_token = bytes_input / num_tokens
+compression_ratio = (num_tokens * 2) / bytes_input
+
+# --- Output ---
+print(f"Input Bytes:       {bytes_input}")
+print(f"Total Tokens:      {num_tokens}")
+print(f"Bytes / Token:     {bytes_per_token:.2f}")
+print(f"True Comp Ratio:   {compression_ratio:.2f}")
+
+
+
+
+
+
+
+
+
+# for str in test_strings_2:
+#     print(i_will_catch_you.encode(str))
+#     print(i_will_catch_you.decode(i_will_catch_you.encode(str)))
 
 # text = "<|endoftext|>"
 # print(text.encode("utf-8"))
