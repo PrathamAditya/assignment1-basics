@@ -12,8 +12,8 @@ class Linear(nn.Module):
         self.dtype = dtype
         self.factory_kwargs = {'device': self.device, 'dtype': self.dtype}
         self.std = math.sqrt(2/(self.in_features + self.out_features))
-        self.weights = nn.Parameter(torch.empty(self.out_features, self.in_features, **self.factory_kwargs))
-        torch.nn.init.trunc_normal_(self.weights, mean=0 ,std=self.std, a=-self.std*3, b=self.std*3)
+        self.weight = nn.Parameter(torch.empty(self.out_features, self.in_features, **self.factory_kwargs))
+        torch.nn.init.trunc_normal_(self.weight, mean=0 ,std=self.std, a=-self.std*3, b=self.std*3)
 
     def forward(self, x: torch.Tensor):
-        return einsum(x, self.weights, "... d_in, d_out d_in -> ... d_out")
+        return einsum(x, self.weight, "... d_in, d_out d_in -> ... d_out")

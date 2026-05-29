@@ -1,6 +1,5 @@
 import torch
 
-
 def Softmax(input: torch.tensor, dim: int):
     if dim > input.ndim:
         return input    
