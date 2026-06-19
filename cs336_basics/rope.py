@@ -9,7 +9,6 @@ class RotaryPositionalEmbedding(nn.Module):
         self.d_k = d_k
         self.max_seq_len = max_seq_len
         self.device = device
-
         bands = torch.arange(0, self.d_k, 2, device=self.device)[: (self.d_k // 2)].float()
         # bands = torch.arange(0, self.d_k, 2, device=self.device).float()
         inv_freq = 1.0 / (self.theta ** (bands/ self.d_k))
