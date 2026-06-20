@@ -162,13 +162,33 @@
 ##############################################################################################################
 
 import torch
-from softmax import Softmax
-a = torch.rand(5, 4)
-print(a)
-# print(a.shape)
-# print(torch.tensor([-987, 12, 13, 14, 15]).shape)
-# a = a - torch.tensor([-987])
-# print(a)
-# print(a)
-Softmax(a, 1)
-# print(type(s.forward()))
+
+# tensor = torch.tensor([[1, 2], [3, 4], [5, 6]])
+logits = torch.tensor([
+    [
+        [2.0, 5.0, 1.0, 3.0, 4.0],
+        [1.0, 4.0, 2.0, 5.0, 3.0],
+        [3.0, 1.0, 5.0, 2.0, 4.0]
+    ],
+    [
+        [4.0, 2.0, 1.0, 5.0, 3.0],
+        [5.0, 1.0, 3.0, 2.0, 4.0],
+        [1.0, 3.0, 4.0, 2.0, 5.0]
+    ]
+])
+
+target_token_ids = torch.tensor([
+    [1, 3, 2],
+    [3, 0, 4]
+])
+temp_tensor = torch.max(logits, dim = -1)
+temp_tensor = temp_tensor.values.unsqueeze(-1)
+logits = logits - temp_tensor
+exp_logits = torch.exp(logits) # exp last dim
+sum_exp = torch.sum(exp_logits, dim=-1)
+log_logits = torch.log(sum_exp)
+o_result = torch.gather(logits, dim=2, index=target_token_ids.unsqueeze(-1)).squeeze(-1)
+print(log_logits.shape)
+print(o_result.shape)
+result = log_logits - o_result
+print(result)
