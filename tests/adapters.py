@@ -25,6 +25,7 @@ from cs336_basics.adamw import AdamW
 from cs336_basics.learning_rate_schedule import LearningRateSchedule
 from cs336_basics.gradient_clipping import GradientClipping
 from cs336_basics.data_loading import DataLoading
+from cs336_basics.checkpointing import save_checkpoint, load_checkpoint
 
 def run_linear(
     d_in: int,
@@ -577,8 +578,8 @@ def run_save_checkpoint(
             we've completed.
         out (str | os.PathLike | BinaryIO | IO[bytes]): Path or file-like object to serialize the model, optimizer, and iteration to.
     """
-    raise NotImplementedError
-
+    
+    save_checkpoint(model, optimizer, iteration, out)
 
 def run_load_checkpoint(
     src: str | os.PathLike | BinaryIO | IO[bytes],
@@ -598,7 +599,7 @@ def run_load_checkpoint(
     Returns:
         int: the previously-serialized number of iterations.
     """
-    raise NotImplementedError
+    return load_checkpoint(src, model, optimizer)
 
 
 def get_tokenizer(
