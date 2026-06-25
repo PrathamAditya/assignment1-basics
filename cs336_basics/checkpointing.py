@@ -4,6 +4,7 @@ import typing
 def save_checkpoint(model: torch.nn.Module, optimizer: torch.optim.Optimizer
                     , iteration: int, out: str | os.PathLike | typing.BinaryIO | typing.IO[bytes]):
     
+    os.makedirs(os.path.dirname(out), exist_ok=True)
     checkpoint_dict = {
         "model": model.state_dict(),
         "optimizer": optimizer.state_dict(),
