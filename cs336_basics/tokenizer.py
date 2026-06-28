@@ -179,11 +179,17 @@ class Tokenizer:
     def encode(self, text: str) -> list[int]:
         if not text:
             return []
+        print("self.special_tokens =", self.special_tokens)
+        print("type =", type(self.special_tokens))
 
         if self.special_tokens:
             sorted_special = sorted(self.special_tokens, key=len, reverse=True)
             special_pattern = f"({'|'.join(re.escape(t) for t in sorted_special)})"
             parts = re.split(special_pattern, text)
+            print("TEXT:", repr(text))
+            print("PARTS:", [repr(x) for x in parts])
+            print("SPECIAL TOKENS:", self.special_tokens)
+            print("SPECIAL TOKEN IDS:", self.special_token_to_id)
         else:
             parts = [text]
 
