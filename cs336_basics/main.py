@@ -193,8 +193,8 @@
 # result = log_logits - o_result
 # print(result)
 ##############################################################################################################
-import torch
-print(torch.cuda.is_available())
+# import torch
+# print(torch.cuda.is_available())
 # from .sgd import SGD
 
 # weights = torch.nn.Parameter(5 * torch.randn((10, 10)))
@@ -205,3 +205,46 @@ print(torch.cuda.is_available())
 #     print(loss.cpu().item())
 #     loss.backward()
 #     opt.step()
+
+###################################################################################################################
+import struct
+from .tokenizer import Tokenizer
+from typing import Iterable, Iterator
+import numpy as np
+import torch
+
+# def make_safe_file_stream(filepath: str) -> Iterator[str]:
+#     """
+#     Reads a massive file line-by-line and strips trailing newlines.
+#     This protects your `buffer[:-1]` logic from mangling text boundaries
+#     and keeps RAM usage near 0.
+#     """
+#     with open(filepath, 'r', encoding='utf-8') as f:
+#         for line in f:
+#             yield line.strip() + " "
+
+# tokenizer = Tokenizer.from_files(r"data/training_output_original/vocab.txt", r"data/training_output_original/merge.txt",  )
+# print(tokenizer.encode("Hello\n<|endoftext|>\nWorld"))
+
+# file_stream = make_safe_file_stream("data/TinyStoriesV2-GPT4-valid.txt")
+# token_iterator = tokenizer.encode_iterable(file_stream)
+# bin_path = "data/traning_output/train_tokens/toystoryvalid.bin"
+
+# print("Streaming tokens to raw binary file...")
+# with open(bin_path, "wb") as f_out:
+#     chunk_buffer = []
+#     for token_id in token_iterator:
+#         chunk_buffer.append(token_id)
+#         if len(chunk_buffer) >= 1_000_000:
+#             f_out.write(struct.pack(f'{len(chunk_buffer)}I', *chunk_buffer))
+#             chunk_buffer.clear()
+#     if chunk_buffer:
+#         f_out.write(struct.pack(f'{len(chunk_buffer)}I', *chunk_buffer))
+
+# print("Binary stream complete. Converting to NumPy array format...")
+# token_array = np.fromfile(bin_path, dtype=np.uint32)
+# np.save("data/traning_output/train_tokens.npy", token_array)
+# print("Successfully saved train_tokens.npy!")
+
+tokens = np.load("data/training_output/train_tokens/train_tokens.npy")
+print((tokens == 256).sum())

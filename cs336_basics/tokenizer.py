@@ -95,16 +95,57 @@ class Tokenizer:
 
     #     return [self.bytes_to_token[item] for item in parts]
 
+    # def encode_iterable(self, iterable: Iterable[str]) -> Iterator[int]:
+    #     if not self.special_tokens:
+
+    #         buffer = ""
+    #         for chunk in iterable:
+    #             buffer += chunk
+
+    #             if len(buffer) > 1:
+    #                 yield from self.encode(buffer[:-1])
+    #                 buffer = buffer[-1]
+    #         if buffer:
+    #             yield from self.encode(buffer)
+    #         return
+
+    #     buffer = ""
+    #     special_pattern = f"({'|'.join(re.escape(t) for t in self.special_tokens)})"
+
+    #     for chunk in iterable:
+    #         buffer += chunk
+    #         parts = re.split(special_pattern, buffer)
+
+    #         for i in range(len(parts) - 1):
+    #             segment = parts[i]
+    #             if not segment:
+    #                 continue
+                    
+    #             if segment in self.special_tokens:
+    #                 yield self.special_token_to_id[segment]
+    #             else:
+    #                 yield from self.encode(segment)
+            
+    #         buffer = parts[-1]
+
+    #     if buffer:
+    #         if buffer in self.special_tokens:
+    #             yield self.special_token_to_id[buffer]
+    #         else:
+    #             yield from self.encode(buffer)
+
     def encode_iterable(self, iterable: Iterable[str]) -> Iterator[int]:
         if not self.special_tokens:
-
             buffer = ""
             for chunk in iterable:
                 buffer += chunk
-
-                if len(buffer) > 1:
-                    yield from self.encode(buffer[:-1])
-                    buffer = buffer[-1]
+                last_space = buffer.rfind(" ")
+                if last_space != -1:
+                    yield from self.encode(buffer[:last_space])
+                    buffer = buffer[last_space:]
+                elif len(buffer) > 65536: # Fail-safe if no spaces exist in a large block
+                    yield from self.encode(buffer)
+                    buffer = ""
             if buffer:
                 yield from self.encode(buffer)
             return
@@ -116,6 +157,7 @@ class Tokenizer:
             buffer += chunk
             parts = re.split(special_pattern, buffer)
 
+            # Process everything except the last slice because it might be incomplete
             for i in range(len(parts) - 1):
                 segment = parts[i]
                 if not segment:
@@ -137,11 +179,17 @@ class Tokenizer:
     def encode(self, text: str) -> list[int]:
         if not text:
             return []
+        print("self.special_tokens =", self.special_tokens)
+        print("type =", type(self.special_tokens))
 
         if self.special_tokens:
             sorted_special = sorted(self.special_tokens, key=len, reverse=True)
             special_pattern = f"({'|'.join(re.escape(t) for t in sorted_special)})"
             parts = re.split(special_pattern, text)
+            print("TEXT:", repr(text))
+            print("PARTS:", [repr(x) for x in parts])
+            print("SPECIAL TOKENS:", self.special_tokens)
+            print("SPECIAL TOKEN IDS:", self.special_token_to_id)
         else:
             parts = [text]
 
@@ -172,6 +220,8 @@ class Tokenizer:
             min_rank = float('inf')
             
             for i in range(len(parts) - 1):
+                pair = (parts[i], parts[i+1])
+                rank = self.merges_in_priority.get(pair)
                 pair = (parts[i], parts[i+1])
                 rank = self.merges_in_priority.get(pair)
                 if rank is not None and rank < min_rank:
