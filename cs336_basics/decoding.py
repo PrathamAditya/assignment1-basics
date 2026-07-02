@@ -64,7 +64,7 @@ def Decoding(model: TransformerLM, temperature, device):
 
 
 if __name__=="__main__":
-    checkpoint_path = "checkpoints/model_250626_10000.pth"
+    checkpoint_path = "checkpoints/model_280626_10000.pth"
     d_model = 256
     num_heads = 8
     d_ff = 1024

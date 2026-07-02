@@ -67,7 +67,7 @@ def bpe_merge(next_id, vocab, merges, pair_frequency_dict, word_dict, pair_to_wo
     vocab[next_id] = vocab[a] + vocab[b]
     merges.append((vocab[a], vocab[b]))
     next_id += 1
-    print(f"XOXO{next_id}XOXO")
+    # print(f"XOXO{next_id}XOXO")
     return next_id
 
 def process_batch(segments, pattern):
@@ -129,6 +129,12 @@ def train_bpe(file_path: str, vocab_size: int, special_tokens: list[str]):
             temp_tuple = (word[i], word[i+1])
             pair_frequency_dict[temp_tuple] = pair_frequency_dict.get(temp_tuple, 0) + freq
             pair_to_words_dict[temp_tuple].add(word)
+    print(f"Unique words       : {len(word_dict):,}")
+    print(f"Unique pairs       : {len(pair_frequency_dict):,}")
+    print(f"Pair dict entries  : {len(pair_to_words_dict):,}")
+
+    total_refs = sum(len(s) for s in pair_to_words_dict.values())
+    print(f"Total word refs    : {total_refs:,}")
  
     while len(vocab) < vocab_size:
         temp_id = next_id
@@ -140,12 +146,11 @@ def train_bpe(file_path: str, vocab_size: int, special_tokens: list[str]):
 if __name__=="__main__":
     pr = cProfile.Profile()
     pr.enable()
-    file_path = f'data/TinyStoriesV2-GPT4-train.txt'
+    file_path = f'data/owt_train.txt'
     vocab_size = 10000
     special_token_list = ["<|endoftext|>"]
-
     v, m = train_bpe(file_path, vocab_size, special_token_list)
-    output_dir = f"data\traning_output"
+    output_dir = f"data\training_output_owt"
     os.makedirs(output_dir, exist_ok=True)
     merge_path = os.path.join(output_dir, "merge.txt")
     vocab_path = os.path.join(output_dir, "vocab.txt")
