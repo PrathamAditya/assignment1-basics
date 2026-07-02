@@ -7,18 +7,41 @@ def DataLoading(x: numpy.array, batch_size: int, context_length: int, device: to
 
     if len(x) <= context_length + 1:
         raise ValueError(f"Invalid learning rate: {len(x)}, Must be greater then context_length + 1")
-    batch_indices = [random.randint(0, len(x)-context_length-1) for _ in range(batch_size)]
+    # batch_indices = [random.randint(0, len(x)-context_length-1) for _ in range(batch_size)]
+    batch_indices = np.random.randint(
+    0,
+    len(x) - context_length - 1,
+    size=batch_size,
+)
+    offsets = np.arange(context_length)
 
-    input_tensor_list = []
-    output_tensor_list = []
-    for i in range(batch_size):
-        input = torch.from_numpy(x[batch_indices[i]: batch_indices[i]+context_length]).long()
-        output = torch.from_numpy(x[batch_indices[i]+1: batch_indices[i]+context_length+1]).long()
-        input_tensor_list.append(input)
-        output_tensor_list.append(output)
-    
-    return (torch.stack(input_tensor_list).to(device=device), 
-            torch.stack(output_tensor_list).to(device=device))
+    inputs = x[batch_indices[:, None] + offsets]
+    targets = x[batch_indices[:, None] + offsets + 1]
+
+    inputs = torch.from_numpy(inputs).long()
+    targets = torch.from_numpy(targets).long()
+    # input_tensor_list = []
+    # output_tensor_list = []
+    # for i in range(batch_size):
+    #     input = torch.from_numpy(x[batch_indices[i]: batch_indices[i]+context_length]).long()
+    #     output = torch.from_numpy(x[batch_indices[i]+1: batch_indices[i]+context_length+1]).long()
+    #     input_tensor_list.append(input)
+    #     output_tensor_list.append(output)
+    return (
+    inputs.pin_memory().to(device, non_blocking=True),
+    targets.pin_memory().to(device, non_blocking=True),
+)
+    # return (torch.stack(input_tensor_list).to(device=device), 
+    #         torch.stack(output_tensor_list).to(device=device))
+#     return (
+#     torch.stack(input_tensor_list)
+#         .pin_memory()
+#         .to(device, non_blocking=True),
+
+#     torch.stack(output_tensor_list)
+#         .pin_memory()
+#         .to(device, non_blocking=True),
+# )
 
 def DataLoadingValidationSequential(x: np.ndarray, batch_size: int, context_length: int, device: torch.device):
     """

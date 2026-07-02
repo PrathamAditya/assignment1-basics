@@ -15,22 +15,22 @@ def make_safe_file_stream(filepath: str):
 def main():
     vocab_path = r"data/training_output_original/vocab.txt"
     merge_path = r"data/training_output_original/merge.txt"
-    input_txt = "data/TinyStoriesV2-GPT4-valid.txt"
+    input_txt = "data/TinyStoriesV2-GPT4-train.txt"
     
-    output_dir = "data/training_output/train_tokens"
+    output_dir = "data/training_output/train_tokens_files"
     os.makedirs(output_dir, exist_ok=True)
-    bin_path = os.path.join(output_dir, "toystoryvalid.bin")
-    npy_path = os.path.join(output_dir, "train_tokens.npy")
+    bin_path = os.path.join(output_dir, "toystorytrain.bin")
+    npy_path = os.path.join(output_dir, "tinystories_train.npy")
 
     print("Loading tokenizer...")
     tokenizer = Tokenizer.from_files(vocab_path, merge_path,
     special_tokens=["<|endoftext|>"])
 
-    print(f"Streaming and tokenizing: {input_txt}")
+    # print(f"Streaming and tokenizing: {input_txt}")
     file_stream = make_safe_file_stream(input_txt)
     token_iterator = tokenizer.encode_iterable(file_stream)
 
-    print(f"Writing tokens to binary: {bin_path}")
+    # print(f"Writing tokens to binary: {bin_path}")
     chunk_size = 1_000_000
     chunk_buffer = []
 
