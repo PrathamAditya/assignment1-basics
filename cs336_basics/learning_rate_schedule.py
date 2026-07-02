@@ -20,24 +20,18 @@ def TrapezoidalLearningRateSchedule(
     warmup_steps=200,
     plateau_fraction=0.20,
 ):
-    # Plateau is measured AFTER warmup
     decay_steps = total_steps - warmup_steps
     plateau_steps = int(decay_steps * plateau_fraction)
     plateau_end = warmup_steps + plateau_steps
 
-    # Warmup
     if step <= warmup_steps:
         return alpha_max * step / warmup_steps
 
-    # Plateau
     if step <= plateau_end:
         return alpha_max
-
-    # Finished schedule
+    
     if step >= total_steps:
         return alpha_min
 
-    # Linear decay
     progress = (step - plateau_end) / (total_steps - plateau_end)
-
     return alpha_max + progress * (alpha_min - alpha_max)

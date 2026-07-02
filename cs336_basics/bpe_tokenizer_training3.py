@@ -4,7 +4,7 @@ from tokenizers.trainers import BpeTrainer
 from tokenizers.pre_tokenizers import ByteLevel
 import os
 
-## USING THIS FOR owT FILES BECAUSE, I AM KEEP GETTING oom ERROR ON MY MACHINE.
+## USING THIS FOR owT FILES BECAUSE, I AM KEEP GETTING OOM ERROR ON MY MACHINE.
 tokenizer = Tokenizer(BPE())
 tokenizer.pre_tokenizer = ByteLevel()
 

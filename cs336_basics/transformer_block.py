@@ -16,13 +16,8 @@ class TransformerBlock(nn.Module):
         self.feed_forward = SwiGLU(d_model=d_model, d_ff=d_ff)
 
     def forward(self, x: torch.Tensor, rope: RotaryPositionalEmbedding = None):
-        # you're computing token_positions fresh on every call from x.shape[-2]. 
-        # Is that always correct for every call site you'll eventually have 
-        # (e.g. during incremental decoding later), or just for the simple "run on a full sequence" case? 
+
         token_positions = torch.arange(x.shape[-2], device=x.device)
         y = x + self.attention(self.rms_norm1(x), rope = rope, token_positions=token_positions)
         z = y + self.feed_forward(self.rms_norm2(y))
         return z
-# d_model: int Dimensionality of the Transformer block inputs.
-# num_heads: int Number of heads to use in multi-head self-attention.
-# d_ff: int Dimensionality of the position-wise feed-forward inner layer.

@@ -166,7 +166,7 @@ def main():
     }
     wandb.init(
         project="cs336-owt_July02_1",
-        name="trapezoid_mu0.030_adam0.0028_final_run",
+        name="trapezoid_mu0.029_adam0.0028_final_run",
         config=config,
     )
 

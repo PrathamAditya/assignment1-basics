@@ -4,13 +4,6 @@ import torch
 
 @torch.no_grad()
 def newton_schulz_orthogonalize(G: torch.Tensor, steps: int = 5, eps: float = 1e-7) -> torch.Tensor:
-    """
-    Approximate orthogonalization of G via quintic Newton-Schulz iteration
-    (Keller Jordan's coefficients, tuned for fast convergence to the
-    nearest semi-orthogonal matrix in the SVD sense: G -> U V^T).
-
-    G: (out_features, in_features)
-    """
     assert G.ndim == 2, f"newton_schulz_orthogonalize expects a 2D tensor, got shape {G.shape}"
     a, b, c = 3.4445, -4.7750, 2.0315
 
@@ -19,7 +12,7 @@ def newton_schulz_orthogonalize(G: torch.Tensor, steps: int = 5, eps: float = 1e
     if transposed:
         X = X.T
 
-    X = X / (X.norm() + eps)  # normalize spectral norm roughly to <= 1
+    X = X / (X.norm() + eps)
 
     for _ in range(steps):
         A = X @ X.T
@@ -32,12 +25,6 @@ def newton_schulz_orthogonalize(G: torch.Tensor, steps: int = 5, eps: float = 1e
 
 
 class Muon(torch.optim.Optimizer):
-    """
-    Muon optimizer: momentum SGD + Newton-Schulz orthogonalization.
-    Only works on 2D parameters (weight matrices). Use AdamW separately
-    for embeddings, output head, norms, and biases.
-    """
-
     def __init__(self, params, lr: float = 0.02, momentum: float = 0.95,
                  nesterov: bool = True, ns_steps: int = 5, weight_decay: float = 0.0):
         if lr <= 0.0:
@@ -81,9 +68,6 @@ class Muon(torch.optim.Optimizer):
 
                 update = g.add(buf, alpha=momentum) if nesterov else buf
                 update = newton_schulz_orthogonalize(update, steps=ns_steps)
-
-                # RMS-matching scale so update magnitude is comparable across
-                # rectangular matrix shapes (standard Muon trick).
                 scale = math.sqrt(max(1.0, p.size(0) / p.size(1)))
                 update = update * scale
 
@@ -96,15 +80,6 @@ class Muon(torch.optim.Optimizer):
 
 
 class NorMuon(torch.optim.Optimizer):
-    """
-    NorMuon: Muon + per-row (per-output-neuron) second-moment normalization
-    of the momentum buffer, applied BEFORE Newton-Schulz orthogonalization.
-    This is like Adam's variance adaptation but row-wise instead of
-    element-wise, so it composes cleanly with orthogonalization.
-
-    Only works on 2D parameters (weight matrices).
-    """
-
     def __init__(self, params, lr: float = 0.02, momentum: float = 0.95,
                  nesterov: bool = True, ns_steps: int = 5, weight_decay: float = 0.0,
                  beta2: float = 0.95, eps: float = 1e-8):
@@ -186,13 +161,6 @@ class NorMuon(torch.optim.Optimizer):
 def build_optimizers(model: torch.nn.Module, muon_lr: float = 0.02, adamw_lr: float = 3e-4,
                       weight_decay: float = 0.01, use_normuon: bool = True,
                       muon_momentum: float = 0.95, adamw_betas=(0.9, 0.95)):
-    """
-    Splits model parameters into:
-      - muon_params: 2D weight matrices (attention/MLP linears) -> Muon/NorMuon
-      - adamw_params: everything else (embeddings, lm_head, norms, biases) -> AdamW
-
-    Returns a list of optimizers; call .step() / .zero_grad() on each.
-    """
     muon_params, adamw_params = [], []
     for name, p in model.named_parameters():
         if not p.requires_grad:

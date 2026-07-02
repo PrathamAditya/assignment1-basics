@@ -16,7 +16,4 @@ class Linear(nn.Module):
         torch.nn.init.trunc_normal_(self.weight, mean=0 ,std=self.std, a=-self.std*3, b=self.std*3)
 
     def forward(self, x: torch.Tensor):
-        # take d_model vector size and maps to vocab_size vector
-        # no bias term as most of the modern LLMs
-        # y = Wx
         return einsum(x, self.weight, "... d_in, d_out d_in -> ... d_out")
