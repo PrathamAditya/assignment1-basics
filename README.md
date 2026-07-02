@@ -1,15 +1,7 @@
-## Reproducing the leaderboard run
-
-This project trains on a single NVIDIA B200 using Modal.
-
-Requirements:
-
-- Modal account
-- OpenWebText dataset mounted as `/data`
-- Weights & Biases API key
 
 Run:
 
 ```bash
+ps: Please add you train and valid file paths in training_together.py OR please tell me if need to change something in order reproduce result on your machine.
 modal run main.py
 ```
