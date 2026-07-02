@@ -11,7 +11,6 @@ class QKNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(head_dim, device=device, dtype=dtype))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x: (..., num_heads, seq_len, head_dim)
         in_dtype = x.dtype
         x = x.to(torch.float32)
         rms = torch.sqrt(torch.mean(x ** 2, dim=-1, keepdim=True) + self.eps)

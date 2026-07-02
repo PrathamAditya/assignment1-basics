@@ -7,10 +7,6 @@ def find_chunk_boundaries(
     desired_num_chunks: int,
     split_special_token: bytes,
 ) -> list[int]:
-    """
-    Chunk the file into parts that can be counted independently.
-    May return fewer chunks if the boundaries end up overlapping.
-    """
     assert isinstance(split_special_token, bytes), "Must represent special token as a bytestring"
 
     file.seek(0, os.SEEK_END)
@@ -27,9 +23,8 @@ def find_chunk_boundaries(
         initial_position = chunk_boundaries[bi]
         file.seek(initial_position)  # Start at boundary guess
         while True:
-            mini_chunk = file.read(mini_chunk_size)  # Read a mini chunk
+            mini_chunk = file.read(mini_chunk_size)
 
-            # If EOF, this boundary should be at the end of the file
             if mini_chunk == b"":
                 chunk_boundaries[bi] = file_size
                 break

@@ -77,23 +77,3 @@ if __name__ == "__main__":
     print(f"Bytes/token ratio: {11200_000_000 / len(ids):.2f}")
     print(f"Max token id: {ids.max()} (should be < 32000)")
     print(f"First 20: {ids[:20]}")
-
-# import time
-# from cs336_basics.tokenizer import Tokenizer
-
-# t = Tokenizer.from_files(
-#     "data/training_output_owt/vocab_train_300626.txt",
-#     "data/training_output_owt/merges_train_300626.txt",
-#     ["<|endoftext|>"]
-# )
-# with open("data/owt_train.txt", "r", encoding="utf-8") as f:
-#     text = f.read(50_000_000)  # 50MB
-
-# start = time.time()
-# ids = t.encode(text)
-# elapsed = time.time() - start
-
-# mb_per_sec = 50 / elapsed
-# print(f"{mb_per_sec:.2f} MB/s single-threaded")
-# print(f"Est. total time (6 cores): {11200 / (mb_per_sec * 6) / 60:.1f} min")
-# print(f"First 20 ids: {ids[:20]}")
